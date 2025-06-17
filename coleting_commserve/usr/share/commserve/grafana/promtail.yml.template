@@ -3,7 +3,7 @@ server:
   grpc_listen_port: 0
 
 positions:
-  filename: /tmp/positions.yaml # Este fichero guarda las líneas uque ha leído
+  filename: /tmp/positions.yaml # Este fichero guarda las líneas que ya ha leído
 
 clients:
 - url: http://localhost:3100/loki/api/v1/push # Conexion con la BBDD
@@ -15,7 +15,7 @@ scrape_configs:
           - localhost
         labels:
           job: backup
-          __path__: /var/log/backup.log # Ruta de los logs a leer (puede ir con *)
+          __path__: /var/log/backup/* # Ruta de los logs a leer (puede ir con *)
 
     pipeline_stages:
       - timestamp:
