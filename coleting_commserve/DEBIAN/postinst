@@ -26,6 +26,8 @@ if ! grep -q "Port 8400" /etc/ssh/sshd_config.d/commserve.conf 2>/dev/null; then
   systemctl restart ssh
 fi
 
+mkdir -p /var/log/backup/
+
 echo "[POSTINST] Habilitando servicio systemd para instalación diferida de Grafana..."
 
 echo "[POSTINST] Habilitando ejecución diferida de Grafana y Promtail con systemd timer..."
