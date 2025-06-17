@@ -1,0 +1,8 @@
+Package: coleting-airgap
+Version: 1.0
+Section: base
+Priority: optional
+Architecture: all
+Maintainer: Marcos <marcos@example.com>
+Description: Paquete Airgap para el TFC.
+Depends: sudo, openssh-server, curl, gnupg, apt-transport-https, software-properties-common, sshpass, chattr, debconf (>= 0.5) | debconf-2.0

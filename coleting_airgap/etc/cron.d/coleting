@@ -1,0 +1,6 @@
+# Copia diaria a las 2:00 AM
+0 2 * * * /usr/lib/airgap/backup_inmutable.sh
+
+# Limpieza diaria a las 3:00 AM
+0 3 * * * /usr/lib/airgap/comprobar_retencion.sh
+

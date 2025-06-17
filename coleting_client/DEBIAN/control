@@ -1,0 +1,8 @@
+Package: coleting-client
+Version: 1.0
+Section: base
+Priority: optional
+Architecture: all
+Maintainer: Marcos <marcos@example.com>
+Description: Paquete Cliente para el TFC.
+Depends: sudo, openssh-server, curl, gnupg, apt-transport-https, software-properties-common, sshpass, debconf (>= 0.5) | debconf-2.0

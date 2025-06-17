@@ -1,0 +1,41 @@
+#!/bin/bash
+set -e
+
+set -e
+. /usr/share/debconf/confmodule
+
+db_input high cliente/mediaagent_ip || true
+db_go || true
+
+db_get cliente/mediaagent_ip
+MEDIAAGENT_IP="$RET"
+
+echo "[POSTINST] Creando usuario commadmin si no existe..."
+if ! id "commadmin" &>/dev/null; then
+    useradd -m -s /bin/bash commadmin
+    echo "commadmin:clave" | chpasswd
+    echo "commadmin ALL=(ALL) ALL" >> /etc/sudoers.d/commadmin
+fi
+
+echo "[POSTINST] Generando clave SSH para commadmin..."
+sudo -u commadmin mkdir -p /home/commadmin/.ssh
+if [ ! -f /home/commadmin/.ssh/id_rsa ]; then
+    sudo -u commadmin ssh-keygen -t rsa -b 2048 -N "" -f /home/commadmin/.ssh/id_rsa
+fi
+
+chmod 700 /home/commadmin/.ssh
+chmod 600 /home/commadmin/.ssh/id_rsa
+
+echo "[POSTINST] Configurando SSH para escuchar en el puerto 8400..."
+if ! grep -q "Port 8400" /etc/ssh/sshd_config.d/commserve.conf 2>/dev/null; then
+  echo "Port 22" > /etc/ssh/sshd_config.d/commserve.conf
+  echo "Port 8400" >> /etc/ssh/sshd_config.d/commserve.conf
+  systemctl restart ssh
+fi
+
+echo "[POSTINST] Copiando clave SSH al Commserve..."
+sshpass -p 'clave' ssh-copy-id -o StrictHostKeyChecking=no -i /home/commadmin/.ssh/id_rsa.pub commadmin@$MEDIAAGENT_IP || echo "[WARNING] No se pudo copiar la clave SSH al Mediaagent."
+sshpass -p 'clave' ssh-copy-id -o StrictHostKeyChecking=no commadmin@$MEDIAAGENT_IP || echo "[WARNING] No se pudo copiar la clave SSH al Mediaagent."
+
+echo "[POSTINST] Cliente instalado correctamente."
+echo -e "\033[30;43m[POSTINST] Por favor reinicie el equipo para completar la instalacion\033[0m"
