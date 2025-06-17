@@ -1,0 +1,10 @@
+Package: coleting-mediaagent
+Version: 1.0
+Section: base
+Priority: optional
+Architecture: all
+Maintainer: Marcos
+Description: Cliente de backup MediaAgent para conexión con Commserve
+Depends: sudo, openssh-server, curl, gnupg, apt-transport-https, software-properties-common, openssh-server, sshpass, debconf (>= 0.5) | debconf-2.0
+
+

@@ -1,0 +1,72 @@
+#!/bin/bash
+set -e
+. /usr/share/debconf/confmodule
+
+db_input high mediaagent/commserve_ip || true
+db_input high mediaagent/mediaagent_ip || true
+db_go || true
+
+db_get mediaagent/commserve_ip
+COMMSERVE_IP="$RET"
+db_get mediaagent/mediaagent_ip
+MEDIAAGENT_IP="$RET"
+
+
+echo "[INFO] Instalando MediaAgent..."
+
+# 1. Crear usuario si no existe
+echo "[POSTINST] Creando usuario commadmin si no existe..."
+if ! id "commadmin" &>/dev/null; then
+    useradd -m -s /bin/bash commadmin
+    echo "commadmin:clave" | chpasswd
+    echo "commadmin ALL=(ALL) ALL" >> /etc/sudoers.d/commadmin
+else
+    echo "commadmin:clave" | chpasswd
+fi
+
+# 2. Crear claves SSH
+echo "[POSTINST] Generando clave SSH para commadmin..."
+sudo -u commadmin mkdir -p /home/commadmin/.ssh
+if [ ! -f /home/commadmin/.ssh/id_rsa ]; then
+    sudo -u commadmin ssh-keygen -t rsa -b 2048 -N "" -f /home/commadmin/.ssh/id_rsa
+fi
+
+echo "[POSTINST] Generando clave SSH para commadmin..."
+mkdir -p /root/.ssh
+if [ ! -f /root/.ssh/id_rsa ]; then
+    ssh-keygen -t rsa -b 2048 -N "" -f /root/.ssh/id_rsa
+fi
+
+chmod 700 /home/commadmin/.ssh
+chmod 600 /home/commadmin/.ssh/id_rsa
+
+# 3. Copiar clave pública al Commserve (si tienes IP/host y acceso)
+echo "[POSTINST] Copiando clave SSH al Commserve..."
+sshpass -p 'clave' ssh-copy-id -o StrictHostKeyChecking=no -i /home/commadmin/.ssh/id_rsa.pub commadmin@$COMMSERVE_IP || echo "[WARNING] No se pudo copiar la clave SSH al Commserve."
+sshpass -p 'clave' ssh-copy-id -o StrictHostKeyChecking=no commadmin@$COMMSERVE_IP || echo "[WARNING] No se pudo copiar la clave SSH al Commserve."
+
+# 3.2. Copiar clave pública del Commserve (si tienes IP/host y acceso)
+echo "[POSTINST] Copiando clave SSH del Commserve al MediaAgent..."
+su commadmin -c "
+ssh -o StrictHostKeyChecking=no commadmin@$COMMSERVE_IP <<'EOF'
+sshpass -p 'clave' ssh-copy-id -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa.pub commadmin@$MEDIAAGENT_IP
+EOF
+" || echo '[WARNING] No se pudo copiar la clave SSH del Commserve al MediaAgent.'
+
+
+# 4. Configurar SSH para escuchar también en 8400
+echo "[POSTINST] Configurando SSH para escuchar en el puerto 8400..."
+if ! grep -q "Port 8400" /etc/ssh/sshd_config.d/mediaagent.conf 2>/dev/null; then
+  echo "Port 22" > /etc/ssh/sshd_config.d/mediaagent.conf
+  echo "Port 8400" >> /etc/ssh/sshd_config.d/mediaagent.conf
+  systemctl daemon-reload
+  systemctl restart ssh
+fi
+
+# 5. Instalar scripts
+echo "[POSTINST] Instalando scripts de MediaAgent..."
+mkdir -p /usr/local/bin/mediaagent
+
+echo "[INFO] MediaAgent instalado correctamente."
+echo -e "\033[30;43m[POSTINST] Por favor reinicie el equipo para completar la instalacion\033[0m"
+sudo -u commadmin DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u commadmin)/bus notify-send "Mediaagent" "La instalación se ha completado correctamente."

@@ -1,0 +1,9 @@
+[Unit]
+Description=Deferred installer for Grafana and Promtail
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/usr/lib/commserve/GrafanaInstaller.sh
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/commserve/GrafanaInstaller.sh

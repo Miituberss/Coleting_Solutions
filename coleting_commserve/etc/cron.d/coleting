@@ -1,0 +1,2 @@
+30 0 * * * root /usr/lib/commserve/CopiasConTar.sh
+0 1 * * * root /usr/lib/commserve/ImportarLogs.sh

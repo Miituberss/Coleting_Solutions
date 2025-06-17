@@ -1,0 +1,9 @@
+[Unit]
+Description=Run deferred Grafana installer after boot
+
+[Timer]
+OnBootSec=1min
+Unit=grafana-deferred.service
+
+[Install]
+WantedBy=timers.target

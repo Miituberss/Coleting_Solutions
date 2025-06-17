@@ -1,0 +1,38 @@
+#!/bin/bash
+set -e
+
+echo "[POSTINST] Creando usuario commadmin si no existe..."
+if ! id "commadmin" &>/dev/null; then
+    useradd -m -s /bin/bash commadmin
+    echo "commadmin:clave" | chpasswd
+    echo "commadmin ALL=(ALL) ALL" >> /etc/sudoers.d/commadmin
+else
+    echo "commadmin:clave" | chpasswd
+fi
+
+echo "[POSTINST] Generando clave SSH para commadmin..."
+sudo -u commadmin mkdir -p /home/commadmin/.ssh
+if [ ! -f /home/commadmin/.ssh/id_rsa ]; then
+    sudo -u commadmin ssh-keygen -t rsa -b 2048 -N "" -f /home/commadmin/.ssh/id_rsa
+fi
+
+chmod 700 /home/commadmin/.ssh
+chmod 600 /home/commadmin/.ssh/id_rsa
+
+echo "[POSTINST] Configurando SSH para escuchar en el puerto 8400..."
+if ! grep -q "Port 8400" /etc/ssh/sshd_config.d/commserve.conf 2>/dev/null; then
+  echo "Port 22" > /etc/ssh/sshd_config.d/commserve.conf
+  echo "Port 8400" >> /etc/ssh/sshd_config.d/commserve.conf
+  systemctl restart ssh
+fi
+
+echo "[POSTINST] Habilitando servicio systemd para instalación diferida de Grafana..."
+
+echo "[POSTINST] Habilitando ejecución diferida de Grafana y Promtail con systemd timer..."
+systemctl daemon-reexec
+systemctl daemon-reload
+systemctl enable grafana-deferred.timer
+systemctl start grafana-deferred.timer
+
+echo "[POSTINST] Commserve instalado correctamente."
+echo -e "\033[30;43m[POSTINST] Por favor reinicie el equipo para completar la instalacion\033[0m"

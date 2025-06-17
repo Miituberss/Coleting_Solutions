@@ -1,0 +1,165 @@
+#!/bin/bash
+
+# Funciones
+
+mostrar_menu() {
+	clear
+	echo "============================"
+	echo "   Menú de Configuración"
+	echo "============================"
+	echo "1) Restaurar una copia de seguridad"
+	echo "2) Configurar retención de backups"
+	echo "3) Configurar programación automática"
+	echo "4) Configurar lista de clientes"
+	echo "5) Ejecutar copia"
+	echo "6) Forzar importacion al MA"
+	echo "7) Salir"
+	echo "============================"
+	read -p "Elige una opción: " opcion
+}
+
+restaurar() {
+	clear
+	read -p "Dime la IP de la que deseas restaurar:" IP_RESTORE
+	echo "Selecciona que copia deseas restaurar"
+	rutabackups="/backups/$IP_RESTORE/"
+	listabackups=$(ssh -x -p 8400 commadmin@$MEDIAAGENT_IP "ls -p $rutabackups | grep -v /")
+	#Bucle listar backups
+	for archivo in $listabackups; do
+		echo "- $archivo"
+	done
+	read -p "Introduzca el nombre del backup:" fbackup
+	backup="$listabackups/$fbackup"
+	# Verificacion
+	read -p "Vas a restaurar $fbackup, ¿Es correcto?[S/N]:" correcto
+	if [[ $correcto == "si" || $correcto == "s" || $correcto == "S" ]]; then
+		procesorestauracion
+	else
+		echo "Volviendo al menu principal..."
+	fi
+
+}
+
+
+procesorestauracion() {
+
+	restore_temp="/temprestore"
+	mkdir -p "$restore_temp"
+	rutabackupMA="/backups/$IP_RESTORE"
+
+	#Restaurar si es Full
+	if [[ $fbackup == *full* ]]; then
+		#Se importa el backup y restaura
+		echo "Restaurando..."
+		echo "Importando $rutabackupMA/$fbackup"
+		scp -P 8400 "commadmin@$MEDIAAGENT_IP:$rutabackupMA/$fbackup" "$restore_temp"
+		tar -xzf "$restore_temp/$fbackup" -C /home/
+	if [ $? == 0 ]; then
+		echo "Restaurado con exito..."
+		rm -f "$restore_temp/$fbackup"
+		exit
+	fi
+	else
+	#restaurar en el caso de ser incremental la seleccionada
+		for res_copy in $listabackups; do
+			if [[ $res_copy == *full* ]]; then
+				copiafull=$res_copy
+				echo "Registrado $res_copy como anterior copia full"
+				sleep 2
+			fi
+			if [ $res_copy == $fbackup ]; then
+				echo "Restaurando $copiafull..."
+				sleep 1
+				#comando de restauracion de la full almacenada en la variable $copiafull
+				echo "Importando copia full : $copiafull"
+				scp -P 8400 "commadmin@$MEDIAAGENT_IP:$rutabackupMA/$copiafull" "$restore_temp"
+				tar -xzf "$restore_temp/$copiafull" -C /home/
+				echo "Restaurada con exito, siguiendo con las incrementales"
+				#Este apartado ira restaurando 1 a 1 las incrementales hasta la copia seleccionada y parara la lectura de copias incrementales
+				inicio="no"
+				for copia in $listabackups; do
+					if [ $inicio == "si" ]; then
+						copiarestaurar="$restore_temp/$copia"
+						echo "Se restaurara $copiarestaurar"
+						scp -P 8400 "commadmin@$MEDIAAGENT_IP:$rutabackupMA/$copia" "$restore_temp"
+						tar -xzf "$restore_temp/$copia" -C /home/
+					fi
+					if [ $copia == $copiafull ]; then
+						inicio="si"
+					fi
+					if [ $copia == $fbackup ]; then
+						echo "Restauracion de Incrementales finalizada"
+						inicio="no"
+						rm -rf "$restore_temp"/*
+					fi
+				done
+				echo "Restaurado todo con exito. Saliendo..."
+				sleep 3
+				exit
+			fi
+		done
+	fi
+}
+
+#Zona principal
+if [ "$EUID" -ne 0 ]; then
+	echo "Este script debe ejecutarse como root."
+	exit 1
+fi
+
+read -p "Introduce la IP del MediaAgent: " MEDIAAGENT_IP
+if [ -z "$MEDIAAGENT_IP" ]; then
+	echo "No se ha proporcionado una IP válida. Saliendo..."
+	exit 1
+else
+	sshpass -p 'clave' ssh-copy-id -o StrictHostKeyChecking=no commadmin@$MEDIAAGENT_IP 2> /dev/null
+fi
+
+while true; do
+	clear
+	mostrar_menu
+	case $opcion in
+		1)
+		restaurar
+		read -p "Presiona Enter para volver al menú..."
+		;;
+		2)
+		echo "Opción 2: Configurar retención de backups"
+		RETENTION_PATH="/usr/lib/mediaagent/Retencion.sh"
+		ssh -tx -p 8400  commadmin@$MEDIAAGENT_IP "nano $RETENTION_PATH"
+		read -p "Presiona Enter para volver al menú..."
+		;;
+		3)
+		echo "Opción 3: Configurar programación automática"
+		crontab -e
+		read -p "Presiona Enter para volver al menú..."
+		;;
+		4)
+		echo "Configurar lista clientes"
+		LISTA_PATH="/usr/share/mediaagent/lista_clientes.txt"
+		ssh -tx -p 8400  commadmin@$MEDIAAGENT_IP "nano $LISTA_PATH"
+		read -p "Presiona Enter para volver al menú..."
+		;;
+		5)
+		echo "Ejecutando copia..."
+		SCRIPT_COPIA="/usr/lib/commserve/CopiasConTar.sh"
+		$SCRIPT_COPIA
+		read -p "Presiona Enter para volver al menú..."
+		;;
+		6)
+		echo "Exportando las copias locales al MA"
+		IMPORT_PATH="/usr/lib/mediaagent/ImportarBackups.sh"
+		ssh -x -p 8400 "commadmin@$MEDIAAGENT_IP" "$IMPORT_PATH"
+		read -p "Presiona Enter para volver al menú..."
+		;;
+		7)
+		echo "Saliendo... ¡Hasta luego!"
+		exit 0
+		;;
+		*)
+		echo "Opción inválida. Intenta de nuevo."
+		read -p "Presiona Enter para continuar..."
+		;;
+esac
+done
+

@@ -1,0 +1,13 @@
+#!/bin/bash
+set -e
+
+echo "[PREINST] Verificando que se ejecuta como root..."
+if [ "$EUID" -ne 0 ]; then
+    echo "Este script debe ejecutarse como root."
+    exit 1
+fi
+
+. /usr/share/debconf/confmodule
+
+db_unregister mediaagent/commserve_ip || true
+db_unregister mediaagent/mediaagent_ip || true
