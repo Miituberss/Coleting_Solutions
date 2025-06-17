@@ -31,4 +31,8 @@ echo "[GRAFANA INSTALLER] Puedes editar Promtail en /etc/promtail/config.yml si 
 sudo -u commadmin DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u commadmin)/bus notify-send "Commserve" "La instalación se ha completado correctamente."
 echo "Commserve instalado correctamente. Ya puedes empezar a usarlo." | wall
 
+# Deshabilita el servicio de instalación para que no se ejecute más
+systemctl enable grafana-deferred.timer
 systemctl disable grafana-deferred.service
+systemctl daemon-reexec
+systemctl daemon-reload
