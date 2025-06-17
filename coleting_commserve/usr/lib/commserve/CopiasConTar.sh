@@ -30,10 +30,16 @@ fi
 # Ejecutar backup
 tar --listed-incremental="$SNAPSHOT_DIR/latest.snar" -czf "$DEST_DIR/$ARCHIVE_NAME" -C "$SOURCE_DIR" .
 
-# Log
-FIN=$(date +%s)
-DURACION=$(($FIN - $INICIO))
-echo "timestamp=[$(date +'%Y-%m-%d %H:%M:%S')] level=info job=backup status=success file=$ARCHIVE_NAME duration=$DURACION host=$HOSTNAME" >> "$LOG_FILE"
+#Registrar en los logs
+if [ $? -eq 0 ]; then
+    FIN=$(date +%s)
+    DURACION=$(($FIN - $INICIO))
+    echo "timestamp=[$(date +'%Y-%m-%d %H:%M:%S')] level=info job=backup status=success file=$ARCHIVE_NAME duration=$DURACION host=$HOSTNAME" >> "$LOG_FILE"
+else
+    FIN=$(date +%s)
+    DURACION=$(($FIN - $INICIO))
+    echo "timestamp=[$(date +'%Y-%m-%d %H:%M:%S')] level=info job=backup status=fail file=$ARCHIVE_NAME duration=$DURACION host=$HOSTNAME" >> "$LOG_FILE"
+fi
 
 # Actualizar snapshot actual
 ln -sf "$SNAPSHOT_FILE" "$SNAPSHOT_DIR/latest.snar"
