@@ -2,3 +2,8 @@ Template: airgap/mediaagent_ip
 Type: string
 Default: 192.168.1.2
 Description: Introduce la IP del MediaAgent
+
+Template: airgap/mediaagent_pass
+Type: password
+Default: clave
+Description: Introduce la IP del usuario commadmin del MA si ha sido modificada tras la instalacion
