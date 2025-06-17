@@ -8,6 +8,8 @@ Repositorio [Github](https://github.com/Miituberss/Coleting_Solutions)
 ## Orden de instalación
 commserve -> mediaagent -> cliente -> airgap
 
+## Credenciales
+
 ### Credenciales del usuario Commadmin
 **Usuario**: commadmin  
 **Contraseña**: clave  
