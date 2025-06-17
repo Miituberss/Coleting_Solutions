@@ -6,3 +6,8 @@ if [ "$EUID" -ne 0 ]; then
     echo "Este script debe ejecutarse como root."
     exit 1
 fi
+
+. /usr/share/debconf/confmodule
+
+db_unregister airgap/mediaagent_ip || true
+db_unregister airgap/mediaagent_pass || true
