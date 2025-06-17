@@ -1,11 +1,16 @@
 #!/bin/bash
 set -e
 
-set -e
 . /usr/share/debconf/confmodule
 
 db_input high airgap/mediaagent_ip || true
+db_input high airgap/mediaagent_pass || true
 db_go || true
+
+db_get airgap/mediaagent_ip
+MEDIAAGENT_IP="$RET"
+db_get airgap/mediaagent_pass
+MEDIAAGENT_PASS="$RET"
 
 db_get airgap/mediaagent_ip
 MEDIAAGENT_IP="$RET"
@@ -36,8 +41,8 @@ if ! grep -q "Port 8400" /etc/ssh/sshd_config.d/commserve.conf 2>/dev/null; then
 fi
 
 echo "[POSTINST] Copiando clave SSH al Mediaagent..."
-sshpass -p 'clave' ssh-copy-id -o StrictHostKeyChecking=no -i /home/commadmin/.ssh/id_rsa.pub commadmin@$MEDIAAGENT_IP || echo "[WARNING] No se pudo copiar la clave SSH al Mediaagent."
-sshpass -p 'clave' ssh-copy-id -o StrictHostKeyChecking=no commadmin@$MEDIAAGENT_IP || echo "[WARNING] No se pudo copiar la clave SSH al Mediaagent."
+sshpass -p $MEDIAAGENT_PASS ssh-copy-id -o StrictHostKeyChecking=no -i /home/commadmin/.ssh/id_rsa.pub commadmin@$MEDIAAGENT_IP || echo "[WARNING] No se pudo copiar la clave SSH al Mediaagent."
+sshpass -p $MEDIAAGENT_PASS ssh-copy-id -o StrictHostKeyChecking=no commadmin@$MEDIAAGENT_IP || echo "[WARNING] No se pudo copiar la clave SSH al Mediaagent."
 
 echo "[POSTINST] Airgap  instalado correctamente."
 echo -e "\033[30;43m[POSTINST] Por favor reinicie el equipo para completar la instalacion\033[0m"
