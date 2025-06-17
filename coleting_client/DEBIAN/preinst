@@ -9,5 +9,5 @@ fi
 
 . /usr/share/debconf/confmodule
 
-db_unregister mediaagent/mediaagent_ip || true
-db_unregister mediaagent/mediaagent_pass || true
+db_unregister cliente/mediaagent_ip || true
+db_unregister cliente/mediaagent_pass || true
