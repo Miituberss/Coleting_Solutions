@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Destino de los logs para Grafana
-LOG_DEST="/var/log/backup.log"
+LOG_DEST="/var/log/backup/"
 # Origen de los logs en el MA
 LOG_PATH="/backups/logsclientes/"
 # Puerto SSH
