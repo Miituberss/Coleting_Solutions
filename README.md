@@ -16,3 +16,6 @@ Contraseña: admin
 
 ### Conexión http a Grafana
 http://IP_Commserve:3000
+
+## AirGap
+Para añadir nuevos MA al proceso de inmutabilidad se debe añadir su IP al fichero /usr/share/airgap/lista_mediaagents.txt
